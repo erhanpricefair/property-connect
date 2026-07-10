@@ -5,14 +5,10 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 
-// See docs/ARCHITECTURE.md §5 (Authentication strategy) for the reasoning:
-// - consumers authenticate (if ever) via Resend magic link, no password
-// - partners/admins authenticate via email+password (Credentials)
-// - database sessions (not JWT) so suspending a partner/admin takes effect immediately
-
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db),
   session: { strategy: "database" },
+  trustHost: true,
   providers: [
     Resend({
       apiKey: process.env.RESEND_API_KEY,
@@ -26,14 +22,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       authorize: async (credentials) => {
         const email = credentials?.email as string | undefined;
         const password = credentials?.password as string | undefined;
+        console.log("[auth] email present:", !!email, "password present:", !!password);
         if (!email || !password) return null;
 
         const user = await db.user.findUnique({ where: { email } });
+        console.log("[auth] user found:", !!user, "hasPasswordHash:", !!user?.passwordHash, "role:", user?.role);
         if (!user?.passwordHash) return null;
 
         const valid = await bcrypt.compare(password, user.passwordHash);
+        console.log("[auth] password valid:", valid);
         if (!valid) return null;
 
+        console.log("[auth] authorize success for", email);
         return user;
       },
     }),
