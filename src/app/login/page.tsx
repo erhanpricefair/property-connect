@@ -1,16 +1,19 @@
+import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
 import { signIn } from "@/lib/auth";
 
-export default function LoginPage({
+export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: { error?: string };
+  searchParams: Promise<{ error?: string }>;
 }) {
+  const params = await searchParams;
+
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-8 px-6">
       <h1 className="text-2xl font-semibold">Sign in</h1>
 
-      {searchParams?.error && (
+      {params?.error && (
         <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
           Invalid email or password. Please try again.
         </p>
@@ -23,7 +26,6 @@ export default function LoginPage({
             await signIn("credentials", formData);
           } catch (error) {
             if (error instanceof AuthError) {
-              const { redirect } = await import("next/navigation");
               redirect("/login?error=CredentialsSignin");
             }
             throw error;
