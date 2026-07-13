@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { buyLeadSchema } from "@/lib/validations/lead";
 import { sendNewLeadNotifications } from "@/lib/services/notification-service";
 import { findOrCreateConsumer } from "@/lib/services/consumer-service";
+import { checkSpamGuards, getClientIp } from "@/lib/services/spam-guard";
 
 const CONSENT_TEXT_VERSION = "2026-07-v1";
 const FINANCE_CONSENT_TEXT_VERSION = "2026-07-finance-v1";
@@ -14,6 +15,10 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: { message: "Invalid request body" } }, { status: 400 });
   }
+
+  const ipAddress = getClientIp(request);
+  const spamResponse = await checkSpamGuards(body, ipAddress);
+  if (spamResponse) return spamResponse;
 
   const parsed = buyLeadSchema.safeParse(body);
   if (!parsed.success) {
@@ -34,7 +39,6 @@ export async function POST(request: NextRequest) {
   }
 
   const suburbLabel = suburbs.map((s) => s.name).join(", ");
-  const ipAddress = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
 
   const consumer = await findOrCreateConsumer(input.email, input.phone, input.name);
 
