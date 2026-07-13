@@ -106,13 +106,14 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  const suburbLabel = suburb ? `${suburb.name} ${suburb.postcode}` : (input.unlistedSuburb ?? "unlisted suburb");
+
   await sendNewLeadNotifications({
     lead,
     consumerId: consumer.id,
     consumerEmail: consumer.email,
     consumerName: consumer.name,
-    suburbLabel: suburb ? `${suburb.name} ${suburb.postcode}` : (input.unlistedSuburb ?? "unlisted suburb"),
-    streetAddress: input.streetAddress,
+    summary: `${input.streetAddress}, ${suburbLabel}`,
   });
 
   return NextResponse.json({ data: { leadId: lead.id, status: lead.status } }, { status: 201 });

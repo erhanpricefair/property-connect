@@ -1,0 +1,202 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  financeLeadSchema,
+  INCOME_EXACT,
+  INCOME_BAND_LABELS,
+  LOAN_PURPOSE_LABELS,
+  type FinanceLeadInput,
+} from "@/lib/validations/lead";
+import { Button } from "@/components/ui/button";
+
+const inputClass =
+  "w-full rounded border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900";
+const labelClass = "text-sm font-medium text-neutral-700 dark:text-neutral-300";
+const errorClass = "text-sm text-red-600 dark:text-red-400";
+
+export default function FinancePage() {
+  const router = useRouter();
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<FinanceLeadInput>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(financeLeadSchema) as any,
+  });
+
+  const purchasePrice = watch("purchasePrice");
+  const depositAmount = watch("depositAmount");
+  const incomeBand = watch("incomeBand");
+  const depositExceedsPrice =
+    typeof purchasePrice === "number" && typeof depositAmount === "number" && depositAmount > purchasePrice;
+
+  const onSubmit = async (values: FinanceLeadInput) => {
+    setSubmitError(null);
+    try {
+      const res = await fetch("/api/leads/finance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+
+      const body = await res.json();
+
+      if (!res.ok) {
+        setSubmitError(body?.error?.message ?? "Something went wrong. Please try again.");
+        return;
+      }
+
+      router.push(`/confirmation/${body.data.leadId}`);
+    } catch {
+      setSubmitError("Something went wrong. Please try again.");
+    }
+  };
+
+  return (
+    <main className="mx-auto max-w-2xl px-6 py-16">
+      <h1 className="text-2xl font-semibold">Get finance</h1>
+      <p className="mt-2 text-neutral-600 dark:text-neutral-400">
+        Tell us about your purchase and we&apos;ll connect you with a local mortgage broker.
+      </p>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="mt-8 flex flex-col gap-5">
+        <div className="flex flex-col gap-1">
+          <label className={labelClass} htmlFor="purchasePrice">
+            Purchase price
+          </label>
+          <input
+            id="purchasePrice"
+            type="number"
+            inputMode="numeric"
+            className={inputClass}
+            {...register("purchasePrice")}
+          />
+          {errors.purchasePrice && <p className={errorClass}>{errors.purchasePrice.message}</p>}
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className={labelClass} htmlFor="depositAmount">
+            Deposit amount
+          </label>
+          <input
+            id="depositAmount"
+            type="number"
+            inputMode="numeric"
+            className={inputClass}
+            {...register("depositAmount")}
+          />
+          {errors.depositAmount && <p className={errorClass}>{errors.depositAmount.message}</p>}
+          {depositExceedsPrice && (
+            <p className="text-sm text-amber-600 dark:text-amber-400">
+              Your deposit exceeds the purchase price — please double check this is correct.
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className={labelClass} htmlFor="incomeBand">
+            Gross annual income
+          </label>
+          <select id="incomeBand" className={inputClass} {...register("incomeBand")}>
+            <option value="">Select an income range</option>
+            {Object.entries(INCOME_BAND_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+          {errors.incomeBand && <p className={errorClass}>{errors.incomeBand.message}</p>}
+        </div>
+
+        {incomeBand === INCOME_EXACT && (
+          <div className="flex flex-col gap-1">
+            <label className={labelClass} htmlFor="incomeExact">
+              Exact gross annual income
+            </label>
+            <input
+              id="incomeExact"
+              type="number"
+              inputMode="numeric"
+              className={inputClass}
+              {...register("incomeExact")}
+            />
+            {errors.incomeExact && <p className={errorClass}>{errors.incomeExact.message}</p>}
+          </div>
+        )}
+
+        <div className="flex flex-col gap-1">
+          <label className={labelClass} htmlFor="loanPurpose">
+            What&apos;s this loan for?
+          </label>
+          <select id="loanPurpose" className={inputClass} {...register("loanPurpose")}>
+            <option value="">Select a purpose</option>
+            {Object.entries(LOAN_PURPOSE_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+          {errors.loanPurpose && <p className={errorClass}>{errors.loanPurpose.message}</p>}
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className={labelClass} htmlFor="name">
+            Your name
+          </label>
+          <input id="name" className={inputClass} {...register("name")} />
+          {errors.name && <p className={errorClass}>{errors.name.message}</p>}
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className={labelClass} htmlFor="email">
+            Email
+          </label>
+          <input id="email" type="email" className={inputClass} {...register("email")} />
+          {errors.email && <p className={errorClass}>{errors.email.message}</p>}
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className={labelClass} htmlFor="phone">
+            Phone
+          </label>
+          <input id="phone" type="tel" className={inputClass} placeholder="04xx xxx xxx" {...register("phone")} />
+          {errors.phone && <p className={errorClass}>{errors.phone.message}</p>}
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="flex items-start gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+            <input type="checkbox" className="mt-1" {...register("generalConsent")} />
+            <span>I agree to be contacted by a matched mortgage broker.</span>
+          </label>
+          {errors.generalConsent && <p className={errorClass}>{errors.generalConsent.message}</p>}
+        </div>
+
+        <div className="flex flex-col gap-1 rounded border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-900">
+          <label className="flex items-start gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+            <input type="checkbox" className="mt-1" {...register("financialConsent")} />
+            <span>
+              I consent to my financial information being collected and disclosed to a licensed
+              mortgage broker for the purpose of assessing my finance options, in accordance with
+              PropertyConnect&apos;s privacy policy.
+            </span>
+          </label>
+          {errors.financialConsent && <p className={errorClass}>{errors.financialConsent.message}</p>}
+        </div>
+
+        {submitError && <p className={errorClass}>{submitError}</p>}
+
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Submitting…" : "Submit"}
+        </Button>
+      </form>
+    </main>
+  );
+}
