@@ -14,8 +14,15 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
+  // Only redirect away if the session has a recognized role — a stale or
+  // malformed token (e.g. from a session issued under a previous auth
+  // config) must fall through to the sign-in form, not bounce forever
+  // against a downstream page that also redirects unrecognized roles back
+  // here. This is what actually broke in production: a leftover cookie
+  // with no role attached created an infinite /login <-> /admin/dashboard
+  // loop (ERR_TOO_MANY_REDIRECTS).
   const session = await auth();
-  if (session?.user) {
+  if (session?.user?.role === "ADMIN" || session?.user?.role === "SUPPORT_ADMIN") {
     redirect("/admin/dashboard");
   }
 
