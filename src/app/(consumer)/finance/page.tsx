@@ -68,6 +68,15 @@ export default function FinancePage() {
       </p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-8 flex flex-col gap-5">
+        <input
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          aria-hidden="true"
+          className="absolute left-[-9999px] top-0 h-0 w-0 opacity-0"
+          {...register("website" as never)}
+        />
+
         <div className="flex flex-col gap-1">
           <label className={labelClass} htmlFor="purchasePrice">
             Purchase price
