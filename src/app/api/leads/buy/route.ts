@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { buyLeadSchema } from "@/lib/validations/lead";
 import { sendNewLeadNotifications } from "@/lib/services/notification-service";
+import { findOrCreateConsumer } from "@/lib/services/consumer-service";
 
 const CONSENT_TEXT_VERSION = "2026-07-v1";
 const FINANCE_CONSENT_TEXT_VERSION = "2026-07-finance-v1";
@@ -113,10 +114,4 @@ function budgetSummary(min?: number, max?: number) {
   if (max) return `up to $${max.toLocaleString()}`;
   if (min) return `from $${min.toLocaleString()}`;
   return "budget not specified";
-}
-
-async function findOrCreateConsumer(email: string, phone: string, name: string) {
-  const existing = await db.consumer.findFirst({ where: { OR: [{ email }, { phone }] } });
-  if (existing) return existing;
-  return db.consumer.create({ data: { email, phone, name } });
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { financeLeadSchema, LOAN_PURPOSE_LABELS } from "@/lib/validations/lead";
 import { sendNewLeadNotifications } from "@/lib/services/notification-service";
+import { findOrCreateConsumer } from "@/lib/services/consumer-service";
 
 const CONSENT_TEXT_VERSION = "2026-07-finance-v1";
 
@@ -63,10 +64,4 @@ export async function POST(request: NextRequest) {
   });
 
   return NextResponse.json({ data: { leadId: lead.id, status: lead.status } }, { status: 201 });
-}
-
-async function findOrCreateConsumer(email: string, phone: string, name: string) {
-  const existing = await db.consumer.findFirst({ where: { OR: [{ email }, { phone }] } });
-  if (existing) return existing;
-  return db.consumer.create({ data: { email, phone, name } });
 }
