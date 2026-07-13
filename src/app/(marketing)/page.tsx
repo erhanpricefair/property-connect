@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Home, Landmark, FileCheck2, ClipboardCheck, KeyRound } from "lucide-react";
 import { TerraceSkyline } from "@/components/marketing/terrace-skyline";
 import { IntroductionPath } from "@/components/marketing/introduction-path";
+import { TestimonialCarousel } from "@/components/marketing/testimonial-carousel";
+import { TESTIMONIALS } from "@/lib/testimonials";
 
 const display = "font-[family-name:var(--font-fraunces)]";
 const body = "font-[family-name:var(--font-work-sans)]";
@@ -136,6 +138,8 @@ export default function MarketingHome() {
           ))}
         </div>
       </section>
+
+      <TestimonialCarousel testimonials={TESTIMONIALS} />
 
       {/* Why PropertyConnect */}
       <section className="bg-[#1F4A3C] text-[#F3EFE6]">
