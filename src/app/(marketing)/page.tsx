@@ -139,7 +139,34 @@ export default function MarketingHome() {
         </div>
       </section>
 
-      <TestimonialCarousel testimonials={TESTIMONIALS} />
+      {TESTIMONIALS.length > 0 ? (
+        <TestimonialCarousel testimonials={TESTIMONIALS} />
+      ) : (
+        /* Launch band — replaced by the testimonial carousel once genuine
+           reviews exist. Every claim here is a process commitment, not a
+           track-record claim. */
+        <section className="border-y border-[#16201B]/10 bg-[#EBE6D9]">
+          <div className="mx-auto max-w-6xl px-6 py-16 sm:px-10">
+            <p className={`${mono} text-[11px] uppercase tracking-[0.2em] text-[#B08A4E]`}>
+              Newly launched
+            </p>
+            <h2 className={`${display} mt-4 max-w-2xl text-3xl leading-snug tracking-tight sm:text-4xl`}>
+              We&apos;re new in Melbourne — and holding ourselves to a simple standard.
+            </h2>
+            <div className="mt-8 grid gap-6 sm:grid-cols-3">
+              <p className="max-w-xs text-sm leading-relaxed text-[#16201B]/70">
+                Every professional is licence-checked before they receive a single introduction.
+              </p>
+              <p className="max-w-xs text-sm leading-relaxed text-[#16201B]/70">
+                Matches are made at suburb level, by someone who actually covers your area.
+              </p>
+              <p className="max-w-xs text-sm leading-relaxed text-[#16201B]/70">
+                Be among our first — we&apos;ll ask you how it went, and publish what you tell us.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Why PropertyConnect */}
       <section className="bg-[#1F4A3C] text-[#F3EFE6]">
