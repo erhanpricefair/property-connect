@@ -11,13 +11,17 @@ export const sellLeadSchema = z
     suburbId: z.string().min(1, "Please select a suburb"),
     unlistedSuburb: z.string().optional(),
     propertyType: z.enum(["HOUSE", "UNIT", "TOWNHOUSE", "LAND", "RURAL", "OTHER"]),
-    estimatedValue: z
-      .string()
-      .optional()
-      .transform((val) => (val ? Number(val) : undefined))
-      .refine((val) => val === undefined || (Number.isFinite(val) && val > 0), {
-        message: "Enter a valid amount",
-      }),
+    // Preprocessed (not just .transform()'d) so this is idempotent whether it
+    // receives a raw form string or an already-parsed number — the client
+    // validates with this same schema before submitting, which means the
+    // server receives the *output* of the client's parse, not raw input. A
+    // plain z.string().transform(Number) breaks on the second pass because
+    // it rejects a number input outright. See the API route for why this
+    // matters — a real bug found and fixed after deploying.
+    estimatedValue: z.preprocess(
+      (val) => (val === "" || val === undefined || val === null ? undefined : Number(val)),
+      z.number().positive("Enter a valid amount").optional()
+    ),
     sellingTimeframe: z.enum(["ASAP", "ONE_TO_THREE_MONTHS", "THREE_TO_SIX_MONTHS", "JUST_RESEARCHING"]),
     currentSituation: z.string().max(1000).optional(),
     name: z.string().min(1, "Please enter your name"),
