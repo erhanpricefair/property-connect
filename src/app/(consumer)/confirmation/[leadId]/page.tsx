@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
+import { ConsumerHeader } from "@/components/marketing/consumer-header";
 
 export default async function ConfirmationPage({
   params,
@@ -30,16 +31,21 @@ export default async function ConfirmationPage({
   const professional = PROFESSIONAL_LABELS[lead.type] ?? "professional";
 
   return (
-    <main className="mx-auto max-w-xl px-6 py-16 text-center">
-      <h1 className="text-2xl font-semibold">
-        {isServiceable ? "Thanks — we've got your details" : "Thanks for your interest"}
-      </h1>
-      <p className="mt-4 text-neutral-600 dark:text-neutral-400">
-        {isServiceable
-          ? `A local ${professional} will be in touch within 24 hours.`
-          : "We're Melbourne-only at the moment, but we've saved your details and will let you know as soon as we cover your area."}
-      </p>
-      <p className="mt-6 text-xs text-neutral-400">Reference: {lead.id}</p>
-    </main>
+    <div className="min-h-screen bg-[#F3EFE6] font-[family-name:var(--font-work-sans)]">
+      <ConsumerHeader />
+      <main className="mx-auto max-w-xl px-6 py-24 text-center">
+        <h1 className="font-[family-name:var(--font-fraunces)] text-4xl tracking-tight text-[#16201B]">
+          {isServiceable ? "Thanks — we've got your details" : "Thanks for your interest"}
+        </h1>
+        <p className="mt-5 text-lg leading-relaxed text-[#16201B]/70">
+          {isServiceable
+            ? `A local ${professional} will be in touch within 24 hours.`
+            : "We're Melbourne-only at the moment, but we've saved your details and will let you know as soon as we cover your area."}
+        </p>
+        <p className="mt-8 font-[family-name:var(--font-plex-mono)] text-[11px] uppercase tracking-[0.1em] text-[#16201B]/40">
+          Reference: {lead.id}
+        </p>
+      </main>
+    </div>
   );
 }
