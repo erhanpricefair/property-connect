@@ -4,7 +4,7 @@
 export type Testimonial = {
   quote: string;
   name: string; // first name + suburb reads naturally, e.g. "Sarah, Richmond"
-  service: string; // e.g. "Sold through PropertyConnect"
+  service: string; // e.g. "Sold through ReferWise"
   stars: 1 | 2 | 3 | 4 | 5;
 };
 

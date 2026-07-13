@@ -1,31 +1,182 @@
 import { Fragment } from "react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
+import { auth } from "@/lib/auth";
+import { sendAssignmentNotification } from "@/lib/services/notification-service";
+
+// Finance leads carry a tighter SLA — contract clauses often have short
+// deadlines — everything else gets a standard 24-hour window.
+const SLA_HOURS_BY_TYPE: Record<string, number> = {
+  FINANCE: 4,
+};
+const DEFAULT_SLA_HOURS = 24;
+
+async function assignLeadToPartner(leadId: string, formData: FormData) {
+  "use server";
+  const session = await auth();
+  if (!session?.user || (session.user.role !== "ADMIN" && session.user.role !== "SUPPORT_ADMIN")) {
+    return;
+  }
+
+  const partnerId = formData.get("partnerId");
+  if (typeof partnerId !== "string" || !partnerId) return;
+
+  const [lead, partner] = await Promise.all([
+    db.lead.findUnique({ where: { id: leadId } }),
+    db.partner.findUnique({ where: { id: partnerId }, include: { user: true } }),
+  ]);
+  if (!lead || !partner) return;
+
+  const slaHours = SLA_HOURS_BY_TYPE[lead.type] ?? DEFAULT_SLA_HOURS;
+  const slaDeadline = new Date(Date.now() + slaHours * 60 * 60 * 1000);
+
+  await db.$transaction([
+    db.leadAssignment.create({
+      data: {
+        leadId,
+        partnerId,
+        status: "ASSIGNED",
+        slaDeadline,
+        assignedBy: session.user.id,
+      },
+    }),
+    db.lead.update({ where: { id: leadId }, data: { status: "ASSIGNED" } }),
+    db.leadStatusHistory.create({
+      data: {
+        leadId,
+        fromStatus: lead.status,
+        toStatus: "ASSIGNED",
+        actorType: "ADMIN",
+        actorId: session.user.id,
+        note: `Assigned to ${partner.businessName}`,
+      },
+    }),
+  ]);
+
+  const payload = lead.payload as Record<string, unknown>;
+  const summary =
+    typeof payload.streetAddress === "string" && typeof payload.suburbLabel === "string"
+      ? `${payload.streetAddress}, ${payload.suburbLabel}`
+      : (lead.type as string);
+
+  await sendAssignmentNotification({
+    lead,
+    partnerId: partner.id,
+    partnerEmail: partner.user.email,
+    partnerName: partner.user.name,
+    summary,
+  });
+
+  revalidatePath(`/admin/leads/${leadId}`);
+}
+
+const LEAD_STATUS_VALUES = [
+  "NEW",
+  "MATCHING",
+  "ASSIGNED",
+  "ACCEPTED",
+  "IN_PROGRESS",
+  "OUTCOME_PENDING",
+  "CLOSED_WON",
+  "CLOSED_LOST",
+  "UNMATCHED",
+  "UNSERVICEABLE",
+  "WITHDRAWN",
+] as const;
+
+async function updateLeadStatus(leadId: string, formData: FormData) {
+  "use server";
+  const session = await auth();
+  if (!session?.user || (session.user.role !== "ADMIN" && session.user.role !== "SUPPORT_ADMIN")) {
+    return;
+  }
+
+  const rawStatus = formData.get("status");
+  const note = formData.get("note");
+  if (typeof rawStatus !== "string" || !LEAD_STATUS_VALUES.includes(rawStatus as (typeof LEAD_STATUS_VALUES)[number])) {
+    return;
+  }
+  const toStatus = rawStatus as (typeof LEAD_STATUS_VALUES)[number];
+
+  const lead = await db.lead.findUnique({ where: { id: leadId }, select: { status: true } });
+  if (!lead) return;
+
+  await db.$transaction([
+    db.lead.update({ where: { id: leadId }, data: { status: toStatus } }),
+    db.leadStatusHistory.create({
+      data: {
+        leadId,
+        fromStatus: lead.status,
+        toStatus,
+        actorType: "ADMIN",
+        actorId: session.user.id,
+        note: typeof note === "string" && note.trim() ? note.trim() : undefined,
+      },
+    }),
+  ]);
+
+  revalidatePath(`/admin/leads/${leadId}`);
+}
+
+async function addNote(leadId: string, formData: FormData) {
+  "use server";
+  const session = await auth();
+  if (!session?.user || (session.user.role !== "ADMIN" && session.user.role !== "SUPPORT_ADMIN")) {
+    return;
+  }
+
+  const body = formData.get("body");
+  if (typeof body !== "string" || !body.trim()) return;
+
+  await db.note.create({
+    data: { leadId, authorType: "ADMIN", authorId: session.user.id, body: body.trim() },
+  });
+
+  revalidatePath(`/admin/leads/${leadId}`);
+}
 
 export default async function AdminLeadDetail({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+
   const { id } = await params;
 
-  const lead = await db.lead.findUnique({
-    where: { id },
-    include: {
-      consumer: true,
-      property: { include: { suburb: true } },
-      consentRecord: true,
-      statusHistory: { orderBy: { createdAt: "asc" } },
-      notes: { orderBy: { createdAt: "desc" } },
-    },
-  });
+  const [lead, activePartners] = await Promise.all([
+    db.lead.findUnique({
+      where: { id },
+      include: {
+        consumer: true,
+        property: { include: { suburb: true } },
+        consentRecord: true,
+        statusHistory: { orderBy: { createdAt: "asc" } },
+        notes: { orderBy: { createdAt: "desc" } },
+        assignments: {
+          orderBy: { assignedAt: "desc" },
+          include: { partner: { include: { user: { select: { name: true, email: true } } } } },
+        },
+      },
+    }),
+    db.partner.findMany({
+      where: { active: true },
+      include: { user: { select: { name: true, email: true } } },
+      orderBy: { businessName: "asc" },
+    }),
+  ]);
 
   if (!lead) {
     notFound();
   }
 
   const payload = lead.payload as Record<string, unknown>;
+  const updateLeadStatusWithId = updateLeadStatus.bind(null, lead.id);
+  const addNoteWithId = addNote.bind(null, lead.id);
+  const assignLeadToPartnerWithId = assignLeadToPartner.bind(null, lead.id);
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
@@ -38,6 +189,101 @@ export default async function AdminLeadDetail({
           {lead.type} lead — {lead.status}
         </h1>
       </div>
+
+      <section className="mt-6 rounded border border-neutral-200 p-4 dark:border-neutral-800">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Assign to partner</h2>
+        {activePartners.length === 0 ? (
+          <p className="mt-2 text-sm text-neutral-500">
+            No active partners yet.{" "}
+            <Link href="/admin/partners" className="underline">
+              Add one
+            </Link>
+            .
+          </p>
+        ) : (
+          <form action={assignLeadToPartnerWithId} className="mt-3 flex flex-wrap items-end gap-3">
+            <div className="flex flex-1 flex-col gap-1">
+              <label htmlFor="partnerId" className="text-xs text-neutral-500">
+                Partner
+              </label>
+              <select
+                id="partnerId"
+                name="partnerId"
+                required
+                className="w-full rounded border border-neutral-300 px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+              >
+                <option value="">Select a partner</option>
+                {activePartners.map((partner) => (
+                  <option key={partner.id} value={partner.id}>
+                    {partner.businessName} ({partner.type}) — {partner.user.name ?? partner.user.email}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              type="submit"
+              className="rounded bg-neutral-900 px-3 py-1.5 text-sm text-white dark:bg-white dark:text-neutral-900"
+            >
+              Assign
+            </button>
+          </form>
+        )}
+        {lead.assignments.length > 0 && (
+          <ul className="mt-4 flex flex-col gap-2 border-t border-neutral-100 pt-3 text-sm dark:border-neutral-900">
+            {lead.assignments.map((assignment) => (
+              <li key={assignment.id} className="flex justify-between">
+                <span>
+                  {assignment.partner.businessName} ({assignment.partner.user.name ?? assignment.partner.user.email})
+                  <span className="text-neutral-500"> — {assignment.status}</span>
+                </span>
+                <span className="text-neutral-400">
+                  {assignment.assignedAt.toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" })}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="mt-6 rounded border border-neutral-200 p-4 dark:border-neutral-800">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Change status</h2>
+        <form action={updateLeadStatusWithId} className="mt-3 flex flex-wrap items-end gap-3">
+          <div className="flex flex-col gap-1">
+            <label htmlFor="status" className="text-xs text-neutral-500">
+              New status
+            </label>
+            <select
+              id="status"
+              name="status"
+              defaultValue={lead.status}
+              className="rounded border border-neutral-300 px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+            >
+              {LEAD_STATUS_VALUES.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-1 flex-col gap-1">
+            <label htmlFor="note" className="text-xs text-neutral-500">
+              Note <span className="text-neutral-400">(optional)</span>
+            </label>
+            <input
+              id="note"
+              name="note"
+              placeholder="e.g. spoke to consumer, appraisal booked for Thursday"
+              className="w-full rounded border border-neutral-300 px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+            />
+          </div>
+          <button
+            type="submit"
+            className="rounded bg-neutral-900 px-3 py-1.5 text-sm text-white dark:bg-white dark:text-neutral-900"
+          >
+            Update
+          </button>
+        </form>
+      </section>
 
       <section className="mt-8">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Consumer</h2>
@@ -91,10 +337,24 @@ export default async function AdminLeadDetail({
         </dl>
       </section>
 
-      {lead.notes.length > 0 && (
-        <section className="mt-8">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Notes</h2>
-          <ul className="mt-2 flex flex-col gap-2">
+      <section className="mt-8">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Notes</h2>
+        <form action={addNoteWithId} className="mt-2 flex gap-2">
+          <input
+            name="body"
+            placeholder="Add a note…"
+            required
+            className="flex-1 rounded border border-neutral-300 px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+          />
+          <button
+            type="submit"
+            className="rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-700"
+          >
+            Add
+          </button>
+        </form>
+        {lead.notes.length > 0 && (
+          <ul className="mt-3 flex flex-col gap-2">
             {lead.notes.map((note) => (
               <li
                 key={note.id}
@@ -104,8 +364,8 @@ export default async function AdminLeadDetail({
               </li>
             ))}
           </ul>
-        </section>
-      )}
+        )}
+      </section>
 
       <section className="mt-8">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">History</h2>

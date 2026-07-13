@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Home, Landmark, FileCheck2, ClipboardCheck, KeyRound } from "lucide-react";
-import { TerraceSkyline } from "@/components/marketing/terrace-skyline";
+import { HouseIllustration } from "@/components/marketing/house-illustration";
 import { IntroductionPath } from "@/components/marketing/introduction-path";
 import { TestimonialCarousel } from "@/components/marketing/testimonial-carousel";
 import { TESTIMONIALS } from "@/lib/testimonials";
@@ -50,7 +50,7 @@ export default function MarketingHome() {
     <main className={`${body} bg-[#F3EFE6] text-[#16201B]`}>
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 sm:px-10">
         <span className={`${display} text-lg tracking-tight`}>
-          Property<span className="text-[#B08A4E]">Connect</span>
+          Refer<span className="text-[#B08A4E]">Wise</span>
         </span>
         <Link
           href="/login"
@@ -95,11 +95,8 @@ export default function MarketingHome() {
           </nav>
         </div>
 
-        <div className="rounded-sm border border-[#16201B]/15 bg-[#EBE6D9] p-8">
-          <TerraceSkyline className="h-auto w-full text-[#1F4A3C]" />
-          <p className={`${mono} mt-4 text-[10px] uppercase tracking-[0.15em] text-[#16201B]/45`}>
-            Terrace rooflines, Melbourne
-          </p>
+        <div className="overflow-hidden rounded-sm border border-[#16201B]/15">
+          <HouseIllustration className="h-auto w-full" />
         </div>
       </section>
 
@@ -168,7 +165,7 @@ export default function MarketingHome() {
         </section>
       )}
 
-      {/* Why PropertyConnect */}
+      {/* Why ReferWise */}
       <section className="bg-[#1F4A3C] text-[#F3EFE6]">
         <div className="mx-auto grid max-w-6xl gap-10 px-6 py-20 sm:grid-cols-3 sm:px-10">
           {REASONS.map((reason) => (
@@ -185,7 +182,7 @@ export default function MarketingHome() {
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-12 sm:flex-row sm:items-center sm:justify-between sm:px-10">
           <div>
             <span className={`${display} text-base text-[#F3EFE6]`}>
-              Property<span className="text-[#B08A4E]">Connect</span>
+              Refer<span className="text-[#B08A4E]">Wise</span>
             </span>
             <p className={`${mono} mt-2 text-[10px] uppercase tracking-[0.15em]`}>Melbourne launch</p>
           </div>
@@ -197,6 +194,9 @@ export default function MarketingHome() {
             ))}
             <Link href="/login" className="transition hover:text-[#F3EFE6]">
               Partner / admin sign in
+            </Link>
+            <Link href="/privacy" className="transition hover:text-[#F3EFE6]">
+              Privacy policy
             </Link>
           </nav>
         </div>

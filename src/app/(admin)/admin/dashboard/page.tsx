@@ -41,19 +41,27 @@ export default async function AdminDashboard() {
             {leads.length} most recent lead{leads.length === 1 ? "" : "s"}
           </p>
         </div>
-        <form
-          action={async () => {
-            "use server";
-            await signOut({ redirectTo: "/login" });
-          }}
-        >
-          <button
-            type="submit"
+        <div className="flex items-center gap-3">
+          <Link
+            href="/admin/partners"
             className="rounded border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700"
           >
-            Sign out
-          </button>
-        </form>
+            Partners
+          </Link>
+          <form
+            action={async () => {
+              "use server";
+              await signOut({ redirectTo: "/login" });
+            }}
+          >
+            <button
+              type="submit"
+              className="rounded border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700"
+            >
+              Sign out
+            </button>
+          </form>
+        </div>
       </div>
 
       <div className="mt-6 flex flex-wrap gap-3">

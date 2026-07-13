@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -188,7 +189,13 @@ export default function FinancePage() {
         <div className="flex flex-col gap-1">
           <label className="flex items-start gap-2 text-sm text-[#16201B]/80">
             <input type="checkbox" className="mt-1" {...register("generalConsent")} />
-            <span>I agree to be contacted by a matched mortgage broker.</span>
+            <span>
+              I agree to be contacted by a matched mortgage broker. See how your{" "}
+              <Link href="/privacy" className="underline hover:text-[#1F4A3C]">
+                data is used
+              </Link>
+              .
+            </span>
           </label>
           {errors.generalConsent && <p className={errorClass}>{errors.generalConsent.message}</p>}
         </div>
@@ -198,8 +205,11 @@ export default function FinancePage() {
             <input type="checkbox" className="mt-1" {...register("financialConsent")} />
             <span>
               I consent to my financial information being collected and disclosed to a licensed
-              mortgage broker for the purpose of assessing my finance options, in accordance with
-              PropertyConnect&apos;s privacy policy.
+              mortgage broker for the purpose of assessing my finance options, in accordance with{" "}
+              <Link href="/privacy" className="underline hover:text-[#1F4A3C]">
+                ReferWise&apos;s privacy policy
+              </Link>
+              .
             </span>
           </label>
           {errors.financialConsent && <p className={errorClass}>{errors.financialConsent.message}</p>}

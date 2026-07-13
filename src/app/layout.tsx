@@ -20,8 +20,8 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PropertyConnect",
-  description: "Australia's property connection platform — Melbourne launch.",
+  title: "ReferWise",
+  description: "The right property introduction, made fast — Melbourne launch.",
 };
 
 export default function RootLayout({

@@ -98,10 +98,10 @@ async function notifyConsumer({
     const result = await resend.emails.send({
       from: EMAIL_FROM,
       to: consumerEmail,
-      subject: "We've received your details — PropertyConnect",
+      subject: "We've received your details — ReferWise",
       html: `
         <p>Hi ${consumerName ?? "there"},</p>
-        <p>Thanks for reaching out to PropertyConnect. We've got your details and a local
+        <p>Thanks for reaching out to ReferWise. We've got your details and a local
         professional will be in touch soon.</p>
         <p><a href="${APP_URL}/confirmation/${lead.id}">View your submission</a></p>
       `,
@@ -135,9 +135,67 @@ async function notifyConsumer({
   }
 }
 
+export async function sendAssignmentNotification(params: {
+  lead: Lead;
+  partnerId: string;
+  partnerEmail: string | null;
+  partnerName: string | null;
+  summary: string;
+}) {
+  const { lead, partnerId, partnerEmail, partnerName, summary } = params;
+
+  if (!partnerEmail) {
+    console.warn("[notifications] partner has no email — skipping assignment notification", partnerId);
+    return;
+  }
+
+  try {
+    const result = await resend.emails.send({
+      from: EMAIL_FROM,
+      to: partnerEmail,
+      subject: `New ${lead.type} lead assigned to you — ${summary}`,
+      html: `
+        <p>Hi ${partnerName ?? "there"},</p>
+        <p>A new <strong>${lead.type}</strong> lead has been assigned to you.</p>
+        <ul>
+          <li><strong>Details:</strong> ${summary}</li>
+        </ul>
+        <p><a href="${APP_URL}/partner/dashboard">View it in your dashboard</a></p>
+      `,
+    });
+
+    if (result.error) {
+      console.error("[notifications] Resend rejected partner assignment notification", result.error);
+    } else {
+      console.log("[notifications] partner assignment notification sent", result.data?.id);
+    }
+
+    await logNotification({
+      recipientType: "PARTNER",
+      partnerId,
+      channel: "EMAIL",
+      template: "lead-assignment-notification",
+      leadId: lead.id,
+      providerMessageId: result.data?.id,
+      status: result.error ? "FAILED" : "SENT",
+    });
+  } catch (err) {
+    console.error("[notifications] failed to send partner assignment notification", err);
+    await logNotification({
+      recipientType: "PARTNER",
+      partnerId,
+      channel: "EMAIL",
+      template: "lead-assignment-notification",
+      leadId: lead.id,
+      status: "FAILED",
+    });
+  }
+}
+
 async function logNotification(params: {
-  recipientType: "ADMIN" | "CONSUMER";
+  recipientType: "ADMIN" | "CONSUMER" | "PARTNER";
   consumerId?: string;
+  partnerId?: string;
   channel: "EMAIL" | "SMS";
   template: string;
   leadId: string;
@@ -149,6 +207,7 @@ async function logNotification(params: {
       data: {
         recipientType: params.recipientType,
         consumerId: params.consumerId,
+        partnerId: params.partnerId,
         channel: params.channel,
         template: params.template,
         leadId: params.leadId,
