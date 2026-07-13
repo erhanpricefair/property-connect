@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -210,7 +211,14 @@ export default function BuyPage() {
         <div className="flex flex-col gap-1">
           <label className="flex items-start gap-2 text-sm text-[#16201B]/80">
             <input type="checkbox" className="mt-1" {...register("consent")} />
-            <span>I agree to be contacted by a matched real estate agent about buying a property.</span>
+            <span>
+              I agree to be contacted by a matched real estate agent about buying a property. See how
+              your{" "}
+              <Link href="/privacy" className="underline hover:text-[#1F4A3C]">
+                data is used
+              </Link>
+              .
+            </span>
           </label>
           {errors.consent && <p className={errorClass}>{errors.consent.message}</p>}
         </div>

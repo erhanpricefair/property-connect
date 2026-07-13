@@ -1,13 +1,83 @@
 import { Fragment } from "react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
+import { auth } from "@/lib/auth";
+
+const LEAD_STATUS_VALUES = [
+  "NEW",
+  "MATCHING",
+  "ASSIGNED",
+  "ACCEPTED",
+  "IN_PROGRESS",
+  "OUTCOME_PENDING",
+  "CLOSED_WON",
+  "CLOSED_LOST",
+  "UNMATCHED",
+  "UNSERVICEABLE",
+  "WITHDRAWN",
+] as const;
+
+async function updateLeadStatus(leadId: string, formData: FormData) {
+  "use server";
+  const session = await auth();
+  if (!session?.user || (session.user.role !== "ADMIN" && session.user.role !== "SUPPORT_ADMIN")) {
+    return;
+  }
+
+  const rawStatus = formData.get("status");
+  const note = formData.get("note");
+  if (typeof rawStatus !== "string" || !LEAD_STATUS_VALUES.includes(rawStatus as (typeof LEAD_STATUS_VALUES)[number])) {
+    return;
+  }
+  const toStatus = rawStatus as (typeof LEAD_STATUS_VALUES)[number];
+
+  const lead = await db.lead.findUnique({ where: { id: leadId }, select: { status: true } });
+  if (!lead) return;
+
+  await db.$transaction([
+    db.lead.update({ where: { id: leadId }, data: { status: toStatus } }),
+    db.leadStatusHistory.create({
+      data: {
+        leadId,
+        fromStatus: lead.status,
+        toStatus,
+        actorType: "ADMIN",
+        actorId: session.user.id,
+        note: typeof note === "string" && note.trim() ? note.trim() : undefined,
+      },
+    }),
+  ]);
+
+  revalidatePath(`/admin/leads/${leadId}`);
+}
+
+async function addNote(leadId: string, formData: FormData) {
+  "use server";
+  const session = await auth();
+  if (!session?.user || (session.user.role !== "ADMIN" && session.user.role !== "SUPPORT_ADMIN")) {
+    return;
+  }
+
+  const body = formData.get("body");
+  if (typeof body !== "string" || !body.trim()) return;
+
+  await db.note.create({
+    data: { leadId, authorType: "ADMIN", authorId: session.user.id, body: body.trim() },
+  });
+
+  revalidatePath(`/admin/leads/${leadId}`);
+}
 
 export default async function AdminLeadDetail({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+
   const { id } = await params;
 
   const lead = await db.lead.findUnique({
@@ -26,6 +96,8 @@ export default async function AdminLeadDetail({
   }
 
   const payload = lead.payload as Record<string, unknown>;
+  const updateLeadStatusWithId = updateLeadStatus.bind(null, lead.id);
+  const addNoteWithId = addNote.bind(null, lead.id);
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
@@ -38,6 +110,46 @@ export default async function AdminLeadDetail({
           {lead.type} lead — {lead.status}
         </h1>
       </div>
+
+      <section className="mt-6 rounded border border-neutral-200 p-4 dark:border-neutral-800">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Change status</h2>
+        <form action={updateLeadStatusWithId} className="mt-3 flex flex-wrap items-end gap-3">
+          <div className="flex flex-col gap-1">
+            <label htmlFor="status" className="text-xs text-neutral-500">
+              New status
+            </label>
+            <select
+              id="status"
+              name="status"
+              defaultValue={lead.status}
+              className="rounded border border-neutral-300 px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+            >
+              {LEAD_STATUS_VALUES.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-1 flex-col gap-1">
+            <label htmlFor="note" className="text-xs text-neutral-500">
+              Note <span className="text-neutral-400">(optional)</span>
+            </label>
+            <input
+              id="note"
+              name="note"
+              placeholder="e.g. spoke to consumer, appraisal booked for Thursday"
+              className="w-full rounded border border-neutral-300 px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+            />
+          </div>
+          <button
+            type="submit"
+            className="rounded bg-neutral-900 px-3 py-1.5 text-sm text-white dark:bg-white dark:text-neutral-900"
+          >
+            Update
+          </button>
+        </form>
+      </section>
 
       <section className="mt-8">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Consumer</h2>
@@ -91,10 +203,24 @@ export default async function AdminLeadDetail({
         </dl>
       </section>
 
-      {lead.notes.length > 0 && (
-        <section className="mt-8">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Notes</h2>
-          <ul className="mt-2 flex flex-col gap-2">
+      <section className="mt-8">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Notes</h2>
+        <form action={addNoteWithId} className="mt-2 flex gap-2">
+          <input
+            name="body"
+            placeholder="Add a note…"
+            required
+            className="flex-1 rounded border border-neutral-300 px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+          />
+          <button
+            type="submit"
+            className="rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-700"
+          >
+            Add
+          </button>
+        </form>
+        {lead.notes.length > 0 && (
+          <ul className="mt-3 flex flex-col gap-2">
             {lead.notes.map((note) => (
               <li
                 key={note.id}
@@ -104,8 +230,8 @@ export default async function AdminLeadDetail({
               </li>
             ))}
           </ul>
-        </section>
-      )}
+        )}
+      </section>
 
       <section className="mt-8">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">History</h2>

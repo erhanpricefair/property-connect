@@ -195,6 +195,9 @@ export default function MarketingHome() {
             <Link href="/login" className="transition hover:text-[#F3EFE6]">
               Partner / admin sign in
             </Link>
+            <Link href="/privacy" className="transition hover:text-[#F3EFE6]">
+              Privacy policy
+            </Link>
           </nav>
         </div>
       </footer>
