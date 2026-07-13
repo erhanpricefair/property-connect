@@ -20,6 +20,12 @@ export async function sendNewLeadNotifications(params: {
 }) {
   const { lead, consumerId, consumerEmail, consumerName, suburbLabel, streetAddress } = params;
 
+  console.log("[notifications] sending for lead", lead.id, {
+    from: EMAIL_FROM,
+    adminRecipientSet: !!LEAD_NOTIFICATION_EMAIL,
+    resendKeySet: !!process.env.RESEND_API_KEY,
+  });
+
   await Promise.allSettled([
     notifyAdmin({ lead, suburbLabel, streetAddress }),
     consumerEmail
@@ -56,6 +62,12 @@ async function notifyAdmin({
         <p><a href="${APP_URL}/admin/leads/${lead.id}">View lead in admin console</a></p>
       `,
     });
+
+    if (result.error) {
+      console.error("[notifications] Resend rejected admin notification", result.error);
+    } else {
+      console.log("[notifications] admin notification sent", result.data?.id);
+    }
 
     await logNotification({
       recipientType: "ADMIN",
@@ -100,6 +112,12 @@ async function notifyConsumer({
         <p><a href="${APP_URL}/confirmation/${lead.id}">View your submission</a></p>
       `,
     });
+
+    if (result.error) {
+      console.error("[notifications] Resend rejected consumer confirmation", result.error);
+    } else {
+      console.log("[notifications] consumer confirmation sent", result.data?.id);
+    }
 
     await logNotification({
       recipientType: "CONSUMER",
