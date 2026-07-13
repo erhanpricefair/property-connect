@@ -98,10 +98,10 @@ async function notifyConsumer({
     const result = await resend.emails.send({
       from: EMAIL_FROM,
       to: consumerEmail,
-      subject: "We've received your details — PropertyConnect",
+      subject: "We've received your details — ReferWise",
       html: `
         <p>Hi ${consumerName ?? "there"},</p>
-        <p>Thanks for reaching out to PropertyConnect. We've got your details and a local
+        <p>Thanks for reaching out to ReferWise. We've got your details and a local
         professional will be in touch soon.</p>
         <p><a href="${APP_URL}/confirmation/${lead.id}">View your submission</a></p>
       `,

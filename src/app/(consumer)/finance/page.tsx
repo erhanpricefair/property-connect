@@ -199,7 +199,7 @@ export default function FinancePage() {
             <span>
               I consent to my financial information being collected and disclosed to a licensed
               mortgage broker for the purpose of assessing my finance options, in accordance with
-              PropertyConnect&apos;s privacy policy.
+              ReferWise&apos;s privacy policy.
             </span>
           </label>
           {errors.financialConsent && <p className={errorClass}>{errors.financialConsent.message}</p>}
