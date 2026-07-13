@@ -43,12 +43,16 @@ export default async function AdminLeadDetail({
         <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Consumer</h2>
         <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
           <dt className="text-neutral-500">Name</dt>
-          <dd>{lead.consumer.name ?? "—"}</dd>
+          <dd>{(payload.submittedName as string | undefined) ?? lead.consumer.name ?? "—"}</dd>
           <dt className="text-neutral-500">Email</dt>
           <dd>{lead.consumer.email ?? "—"}</dd>
           <dt className="text-neutral-500">Phone</dt>
           <dd>{lead.consumer.phone ?? "—"}</dd>
         </dl>
+        <p className="mt-2 text-xs text-neutral-400">
+          Name shown is as submitted with this lead. Email/phone reflect this person&apos;s latest
+          known contact details across all their leads.
+        </p>
       </section>
 
       {lead.property && (
@@ -76,12 +80,14 @@ export default async function AdminLeadDetail({
       <section className="mt-8">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Details</h2>
         <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-          {Object.entries(payload).map(([key, value]) => (
-            <Fragment key={key}>
-              <dt className="text-neutral-500">{key}</dt>
-              <dd>{value === null || value === "" ? "—" : String(value)}</dd>
-            </Fragment>
-          ))}
+          {Object.entries(payload)
+            .filter(([key]) => key !== "submittedName")
+            .map(([key, value]) => (
+              <Fragment key={key}>
+                <dt className="text-neutral-500">{key}</dt>
+                <dd>{value === null || value === "" ? "—" : String(value)}</dd>
+              </Fragment>
+            ))}
         </dl>
       </section>
 

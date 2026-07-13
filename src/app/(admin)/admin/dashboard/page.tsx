@@ -93,7 +93,12 @@ export default async function AdminDashboard() {
                     {lead.status}
                   </span>
                 </td>
-                <td className="py-2 pr-4">{lead.consumer.name ?? lead.consumer.email ?? "—"}</td>
+                <td className="py-2 pr-4">
+                  {(lead.payload as { submittedName?: string } | null)?.submittedName ??
+                    lead.consumer.name ??
+                    lead.consumer.email ??
+                    "—"}
+                </td>
                 <td className="py-2 pr-4">
                   {lead.property?.suburb
                     ? `${lead.property.suburb.name} ${lead.property.suburb.postcode}`

@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
       consumerId: consumer.id,
       consentRecordId: consentRecord.id,
       payload: {
+        submittedName: input.name,
         purchasePrice: input.purchasePrice,
         depositAmount: input.depositAmount,
         depositExceedsPrice: input.depositAmount > input.purchasePrice,
