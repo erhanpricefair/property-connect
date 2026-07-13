@@ -235,14 +235,18 @@ Running matching, notification delivery, and SLA timeouts as durable, retryable 
 Three distinct populations, one Auth.js configuration, differentiated by provider and role:
 
 - **Consumers:** no account required for MVP intake (per PRD). If/when self-service status tracking ships, consumers authenticate via **email magic link** (Resend as the email provider) or phone OTP (Twilio Verify) — no passwords, since password reuse/reset overhead isn't worth it for an infrequent, low-stakes login.
-- **Professionals:** **email + password (Credentials provider)**, with mandatory email verification before first login, since a professional account is where fee/dispute-relevant contact data lives. Session strategy: **database sessions** (not JWT) so that suspending a professional (e.g. license revoked, fraud suspected) takes effect immediately rather than waiting for a JWT to expire.
-- **Admins:** email + password + **mandatory TOTP MFA** (Auth.js supports this via a custom Credentials flow with a second verification step, or a provider like Auth.js's built-in two-factor pattern). Database sessions, short idle timeout (e.g. 30 min), given admin access touches fee records and PII broadly.
+- **Professionals:** **email + password (Credentials provider)**, with mandatory email verification before first login, since a professional account is where fee/dispute-relevant contact data lives.
+- **Admins:** email + password + **mandatory TOTP MFA** (Auth.js supports this via a custom Credentials flow with a second verification step, or a provider like Auth.js's built-in two-factor pattern), given admin access touches fee records and PII broadly.
+
+**Session strategy: JWT, not database — this was revised after build, and the reasoning is worth recording.** The original design called for database sessions specifically so that suspending a partner or admin (license revoked, fraud suspected) would take effect immediately rather than waiting out a token's lifetime. That doesn't work: **Auth.js does not support database-backed sessions with the Credentials provider** — database sessions rely on the adapter's OAuth-style Account-linking flow, which a Credentials sign-in never creates. Configuring `strategy: "database"` anyway produces a JWT-shaped session cookie that can never be validated against the `Session` table, so every credentials sign-in appears to succeed but the session is silently unrecognized on the next request. This was found and fixed after initial deployment — see the git history on `lib/auth.ts` for the incident.
+
+**Mitigating the lost "instant revoke" property:** with JWT sessions, a suspended account's existing token stays valid until it expires. If/when this matters in practice (a genuine fraud/abuse incident), the mitigation is a check inside the `jwt` callback — re-querying `Partner.active`/`licenseStatus` on token refresh (or on every request, at some latency cost) and forcing sign-out if the account is no longer active — rather than reaching for database sessions again.
 
 ```ts
 // lib/auth.ts (shape, not full implementation)
 export const authOptions: NextAuthConfig = {
   adapter: PrismaAdapter(prisma),
-  session: { strategy: "database" },
+  session: { strategy: "jwt" },
   providers: [
     EmailProvider({ /* Resend transport, magic link — consumer self-service */ }),
     CredentialsProvider({ /* bcrypt/argon2 password check — professional & admin */ }),
@@ -369,7 +373,7 @@ Scoped deliberately narrow at MVP — **enrichment, not decisioning**:
 | Lead data model | Base table + JSONB payload | One table per lead type | Avoids schema churn as journeys evolve; common fields still indexed |
 | Async workflow | Durable job runner (Inngest) | Trigger.dev, QStash, inline `await`/bare cron | Native step retries + `sleepUntil` fit the SLA-timeout workflow directly; Trigger.dev's repeated breaking rewrites and QStash's lack of step-orchestration were both weighed and rejected |
 | Database provider | Neon (via Vercel's native Postgres integration) | Supabase, self-managed Postgres + PgBouncer | Serverless-native pooling + DB branching per preview deploy, without bundling an unused auth/storage platform |
-| Auth session strategy | Database sessions | JWT sessions | Immediate effect when suspending a professional/admin account |
+| Auth session strategy | JWT sessions | Database sessions | Database sessions are unsupported with the Credentials provider in Auth.js — discovered post-deployment; see §5 |
 | Audit trail | Append-only `LeadStatusHistory`/`AdminActionLog`, DB-level no-update/delete | Mutable status field only | Fee disputes and security incidents both need an unforgeable history |
 | AI role | Enrichment only, non-blocking, additive | AI-driven matching decisions | Keeps the core revenue-critical path deterministic and debuggable; AI failure can't stop a lead being routed |
 | DB scaling | Indexing + partitioning + read replica, deferred until needed | Sharding / NoSQL | Hundreds of thousands of rows is well within single-Postgres-instance capability with correct indexes; added complexity isn't justified yet |

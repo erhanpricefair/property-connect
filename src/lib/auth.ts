@@ -5,9 +5,20 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 
+// Session strategy: JWT, not database.
+//
+// Auth.js does not support database-backed sessions with the Credentials
+// provider — database sessions rely on the adapter's Account-linking flow,
+// which Credentials sign-in never creates. Configuring `strategy: "database"`
+// here silently issued a JWT-shaped cookie that could never be validated
+// against the Session table, so every credentials sign-in looked successful
+// but the resulting session was never recognized on the next request. This
+// was the actual root cause of a long-running "login doesn't work" report —
+// switching to JWT sessions is the correct, Auth.js-documented approach for
+// Credentials-based auth, not a workaround.
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db),
-  session: { strategy: "database" },
+  session: { strategy: "jwt" },
   trustHost: true,
   providers: [
     Resend({
@@ -22,27 +33,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       authorize: async (credentials) => {
         const email = credentials?.email as string | undefined;
         const password = credentials?.password as string | undefined;
-        console.log("[auth] email present:", !!email, "password present:", !!password);
         if (!email || !password) return null;
 
         const user = await db.user.findUnique({ where: { email } });
-        console.log("[auth] user found:", !!user, "hasPasswordHash:", !!user?.passwordHash, "role:", user?.role);
         if (!user?.passwordHash) return null;
 
         const valid = await bcrypt.compare(password, user.passwordHash);
-        console.log("[auth] password valid:", valid);
         if (!valid) return null;
 
-        console.log("[auth] authorize success for", email);
         return user;
       },
     }),
   ],
   callbacks: {
-    session: async ({ session, user }) => {
+    jwt: async ({ token, user }) => {
+      if (user) {
+        token.role = user.role;
+      }
+      return token;
+    },
+    session: async ({ session, token }) => {
       if (session.user) {
-        session.user.id = user.id;
-        session.user.role = user.role;
+        session.user.id = token.sub as string;
+        session.user.role = token.role as typeof session.user.role;
       }
       return session;
     },
