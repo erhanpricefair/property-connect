@@ -78,6 +78,7 @@ export async function POST(request: NextRequest) {
       propertyId: property?.id,
       consentRecordId: consentRecord.id,
       payload: {
+        submittedName: input.name,
         streetAddress: input.streetAddress,
         suburbName: suburb?.name ?? input.unlistedSuburb,
         estimatedValue: input.estimatedValue ?? null,

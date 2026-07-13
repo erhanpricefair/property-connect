@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
       consumerId: consumer.id,
       consentRecordId: consentRecord.id,
       payload: {
+        submittedName: input.name,
         suburbLabel,
         suburbNames: suburbs.map((s) => s.name),
         budgetMin: input.budgetMin ?? null,

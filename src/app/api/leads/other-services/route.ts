@@ -98,6 +98,7 @@ function buildTypeSpecifics(
     return {
       leadType: "INSPECTION",
       payload: {
+        submittedName: input.name,
         streetAddress: input.streetAddress,
         suburbLabel,
         inspectionType: input.inspectionType,
@@ -112,6 +113,7 @@ function buildTypeSpecifics(
     return {
       leadType: "CONVEYANCING",
       payload: {
+        submittedName: input.name,
         streetAddress: input.streetAddress,
         suburbLabel,
         transactionType: input.transactionType,
@@ -127,6 +129,7 @@ function buildTypeSpecifics(
   return {
     leadType: "PROPERTY_MANAGEMENT",
     payload: {
+      submittedName: input.name,
       streetAddress: input.streetAddress,
       suburbLabel,
       propertyType: input.propertyType,
