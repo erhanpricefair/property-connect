@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sellLeadSchema, SUBURB_NOT_LISTED } from "@/lib/validations/lead";
+import { sendNewLeadNotifications } from "@/lib/services/notification-service";
 
 const CONSENT_TEXT_VERSION = "2026-07-v1";
 const DUPLICATE_WINDOW_DAYS = 30;
@@ -104,6 +105,15 @@ export async function POST(request: NextRequest) {
       },
     });
   }
+
+  await sendNewLeadNotifications({
+    lead,
+    consumerId: consumer.id,
+    consumerEmail: consumer.email,
+    consumerName: consumer.name,
+    suburbLabel: suburb ? `${suburb.name} ${suburb.postcode}` : (input.unlistedSuburb ?? "unlisted suburb"),
+    streetAddress: input.streetAddress,
+  });
 
   return NextResponse.json({ data: { leadId: lead.id, status: lead.status } }, { status: 201 });
 }
