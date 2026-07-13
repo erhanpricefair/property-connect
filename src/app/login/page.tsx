@@ -1,12 +1,24 @@
 import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
-import { signIn } from "@/lib/auth";
+import { auth, signIn } from "@/lib/auth";
+
+// This page checks the current session on every request and must never be
+// served from a cache — otherwise a signed-in user can be shown a stale,
+// pre-login version of this page instead of being redirected to the
+// dashboard.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function LoginPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
+  const session = await auth();
+  if (session?.user) {
+    redirect("/admin/dashboard");
+  }
+
   const params = await searchParams;
 
   return (
