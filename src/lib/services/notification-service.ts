@@ -15,10 +15,12 @@ export async function sendNewLeadNotifications(params: {
   consumerId: string;
   consumerEmail: string | null;
   consumerName: string | null;
-  suburbLabel: string;
-  streetAddress: string;
+  // Short human-readable description of the lead for email subject/body —
+  // e.g. "3 Smith St, Richmond VIC 3121" for Sell/Inspection/Conveyancing/
+  // Property Management, "Richmond, Hawthorn · $600k–$750k" for Buy.
+  summary: string;
 }) {
-  const { lead, consumerId, consumerEmail, consumerName, suburbLabel, streetAddress } = params;
+  const { lead, consumerId, consumerEmail, consumerName, summary } = params;
 
   console.log("[notifications] sending for lead", lead.id, {
     from: EMAIL_FROM,
@@ -27,22 +29,14 @@ export async function sendNewLeadNotifications(params: {
   });
 
   await Promise.allSettled([
-    notifyAdmin({ lead, suburbLabel, streetAddress }),
+    notifyAdmin({ lead, summary }),
     consumerEmail
       ? notifyConsumer({ lead, consumerId, consumerEmail, consumerName })
       : Promise.resolve(),
   ]);
 }
 
-async function notifyAdmin({
-  lead,
-  suburbLabel,
-  streetAddress,
-}: {
-  lead: Lead;
-  suburbLabel: string;
-  streetAddress: string;
-}) {
+async function notifyAdmin({ lead, summary }: { lead: Lead; summary: string }) {
   if (!LEAD_NOTIFICATION_EMAIL) {
     console.warn("[notifications] LEAD_NOTIFICATION_EMAIL not set — skipping admin notification");
     return;
@@ -52,11 +46,11 @@ async function notifyAdmin({
     const result = await resend.emails.send({
       from: EMAIL_FROM,
       to: LEAD_NOTIFICATION_EMAIL,
-      subject: `New ${lead.type} lead — ${suburbLabel}`,
+      subject: `New ${lead.type} lead — ${summary}`,
       html: `
         <p>A new <strong>${lead.type}</strong> lead just came in.</p>
         <ul>
-          <li><strong>Address:</strong> ${streetAddress}, ${suburbLabel}</li>
+          <li><strong>Details:</strong> ${summary}</li>
           <li><strong>Status:</strong> ${lead.status}</li>
         </ul>
         <p><a href="${APP_URL}/admin/leads/${lead.id}">View lead in admin console</a></p>

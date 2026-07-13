@@ -9,17 +9,26 @@ export default function MarketingHome() {
       </p>
       <h1 className="text-4xl font-semibold tracking-tight">PropertyConnect</h1>
       <p className="max-w-md text-muted-foreground">
-        Scaffold in progress — consumer intake journeys, partner workspace, and
-        admin console are not yet built. See docs/PRD.md and docs/ARCHITECTURE.md.
+        Get connected with a trusted local agent, broker, or property professional —
+        no cost, no obligation.
       </p>
-      <div className="mt-2 flex gap-3">
+      <div className="mt-2 flex flex-wrap justify-center gap-3">
         <Button asChild>
           <Link href="/sell">Sell a property</Link>
         </Button>
-        <Button variant="outline" asChild>
-          <Link href="/login">Partner / admin sign in</Link>
+        <Button asChild>
+          <Link href="/buy">Buy a property</Link>
+        </Button>
+        <Button asChild>
+          <Link href="/finance">Get finance</Link>
+        </Button>
+        <Button asChild>
+          <Link href="/other-services">Other services</Link>
         </Button>
       </div>
+      <Button variant="outline" asChild className="mt-2">
+        <Link href="/login">Partner / admin sign in</Link>
+      </Button>
     </main>
   );
 }

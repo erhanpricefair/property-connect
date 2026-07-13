@@ -97,7 +97,7 @@ export default async function AdminDashboard() {
                 <td className="py-2 pr-4">
                   {lead.property?.suburb
                     ? `${lead.property.suburb.name} ${lead.property.suburb.postcode}`
-                    : "—"}
+                    : ((lead.payload as { suburbLabel?: string } | null)?.suburbLabel ?? "—")}
                 </td>
                 <td className="py-2 pr-4 text-neutral-500">
                   {lead.createdAt.toLocaleString("en-AU", {
