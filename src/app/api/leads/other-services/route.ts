@@ -7,6 +7,7 @@ import {
   TRANSACTION_TYPE_LABELS,
 } from "@/lib/validations/lead";
 import { sendNewLeadNotifications } from "@/lib/services/notification-service";
+import { findOrCreateConsumer } from "@/lib/services/consumer-service";
 import type { LeadType, Prisma, PropertyType } from "@prisma/client";
 
 const CONSENT_TEXT_VERSION = "2026-07-v1";
@@ -150,10 +151,4 @@ function isWithinBusinessDays(dateStr: string, businessDays: number) {
     if (count > businessDays) return false;
   }
   return count <= businessDays;
-}
-
-async function findOrCreateConsumer(email: string, phone: string, name: string) {
-  const existing = await db.consumer.findFirst({ where: { OR: [{ email }, { phone }] } });
-  if (existing) return existing;
-  return db.consumer.create({ data: { email, phone, name } });
 }
