@@ -12,13 +12,14 @@ import {
   type BuyLeadInput,
 } from "@/lib/validations/lead";
 import { Button } from "@/components/ui/button";
+import { ConsumerHeader } from "@/components/marketing/consumer-header";
 
 type Suburb = { id: string; name: string; postcode: string };
 
 const inputClass =
-  "w-full rounded border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900";
-const labelClass = "text-sm font-medium text-neutral-700 dark:text-neutral-300";
-const errorClass = "text-sm text-red-600 dark:text-red-400";
+  "w-full rounded-sm border border-[#16201B]/20 bg-white px-3 py-2.5 text-sm text-[#16201B] outline-none transition focus:border-[#1F4A3C]";
+const labelClass = "font-[family-name:var(--font-plex-mono)] text-[11px] uppercase tracking-[0.08em] text-[#16201B]/70";
+const errorClass = "text-sm text-[#A0402E]";
 
 export default function BuyPage() {
   const router = useRouter();
@@ -70,13 +71,17 @@ export default function BuyPage() {
   };
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
-      <h1 className="text-2xl font-semibold">Find your next property</h1>
-      <p className="mt-2 text-neutral-600 dark:text-neutral-400">
-        Tell us what you&apos;re after and we&apos;ll connect you with a local agent.
-      </p>
+    <div className="min-h-screen bg-[#F3EFE6] font-[family-name:var(--font-work-sans)]">
+      <ConsumerHeader />
+      <main className="mx-auto max-w-2xl px-6 py-16">
+        <h1 className="font-[family-name:var(--font-fraunces)] text-4xl tracking-tight text-[#16201B]">
+          Find your next property
+        </h1>
+        <p className="mt-3 text-[#16201B]/70">
+          Tell us what you&apos;re after and we&apos;ll connect you with a local agent.
+        </p>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="mt-8 flex flex-col gap-5">
+        <form onSubmit={handleSubmit(onSubmit)} className="mt-10 flex flex-col gap-5">
         <input
           type="text"
           tabIndex={-1}
@@ -88,7 +93,7 @@ export default function BuyPage() {
 
         <div className="flex flex-col gap-1">
           <label className={labelClass}>Preferred suburbs</label>
-          <div className="max-h-56 overflow-y-auto rounded border border-neutral-300 p-3 dark:border-neutral-700">
+          <div className="max-h-56 overflow-y-auto rounded-sm border border-[#16201B]/20 bg-white p-3">
             {suburbs.map((suburb) => (
               <label key={suburb.id} className="flex items-center gap-2 py-1 text-sm">
                 <input type="checkbox" value={suburb.id} {...register("suburbIds")} />
@@ -102,13 +107,13 @@ export default function BuyPage() {
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-1">
             <label className={labelClass} htmlFor="budgetMin">
-              Budget min <span className="text-neutral-400">(optional)</span>
+              Budget min <span className="text-[#16201B]/40">(optional)</span>
             </label>
             <input id="budgetMin" type="number" inputMode="numeric" className={inputClass} {...register("budgetMin")} />
           </div>
           <div className="flex flex-col gap-1">
             <label className={labelClass} htmlFor="budgetMax">
-              Budget max <span className="text-neutral-400">(optional)</span>
+              Budget max <span className="text-[#16201B]/40">(optional)</span>
             </label>
             <input id="budgetMax" type="number" inputMode="numeric" className={inputClass} {...register("budgetMax")} />
             {errors.budgetMax && <p className={errorClass}>{errors.budgetMax.message}</p>}
@@ -131,13 +136,13 @@ export default function BuyPage() {
         </div>
 
         {showFinanceCrossSell && (
-          <div className="rounded border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-900">
-            <label className="flex items-start gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+          <div className="rounded border border-[#16201B]/15 bg-[#EBE6D9] p-4">
+            <label className="flex items-start gap-2 text-sm text-[#16201B]/80">
               <input type="checkbox" className="mt-1" {...register("wantsFinanceIntro")} />
               <span>Also connect me with a mortgage broker to help with finance.</span>
             </label>
             {wantsFinanceIntro && (
-              <label className="mt-2 flex items-start gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+              <label className="mt-2 flex items-start gap-2 text-sm text-[#16201B]/80">
                 <input type="checkbox" className="mt-1" {...register("financeConsent")} />
                 <span>
                   I agree to my budget and contact details being shared with a licensed mortgage broker
@@ -151,7 +156,7 @@ export default function BuyPage() {
 
         <div className="flex flex-col gap-1">
           <label className={labelClass} htmlFor="propertyType">
-            Property type <span className="text-neutral-400">(optional)</span>
+            Property type <span className="text-[#16201B]/40">(optional)</span>
           </label>
           <select id="propertyType" className={inputClass} {...register("propertyType")}>
             <option value="">No preference</option>
@@ -203,7 +208,7 @@ export default function BuyPage() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="flex items-start gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+          <label className="flex items-start gap-2 text-sm text-[#16201B]/80">
             <input type="checkbox" className="mt-1" {...register("consent")} />
             <span>I agree to be contacted by a matched real estate agent about buying a property.</span>
           </label>
@@ -212,10 +217,15 @@ export default function BuyPage() {
 
         {submitError && <p className={errorClass}>{submitError}</p>}
 
-        <Button type="submit" disabled={isSubmitting}>
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="rounded-sm bg-[#1F4A3C] font-[family-name:var(--font-plex-mono)] text-xs uppercase tracking-[0.08em] text-[#F3EFE6] hover:bg-[#1F4A3C]/90"
+        >
           {isSubmitting ? "Submitting…" : "Submit"}
         </Button>
-      </form>
-    </main>
+        </form>
+      </main>
+    </div>
   );
 }
