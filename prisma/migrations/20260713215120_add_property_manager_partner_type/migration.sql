@@ -1,0 +1,3 @@
+-- AlterEnum
+ALTER TYPE "PartnerType" ADD VALUE 'PROPERTY_MANAGER';
+

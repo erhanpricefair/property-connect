@@ -5,7 +5,13 @@ import { db } from "@/lib/db";
 import { createPartner } from "@/lib/services/partner-service";
 import type { PartnerType } from "@prisma/client";
 
-const PARTNER_TYPE_VALUES: PartnerType[] = ["AGENT", "MORTGAGE_BROKER", "INSPECTOR", "CONVEYANCER"];
+const PARTNER_TYPE_VALUES: PartnerType[] = [
+  "AGENT",
+  "MORTGAGE_BROKER",
+  "INSPECTOR",
+  "CONVEYANCER",
+  "PROPERTY_MANAGER",
+];
 const ABN_REGEX = /^\d{11}$/;
 
 async function createPartnerFromForm(formData: FormData) {
