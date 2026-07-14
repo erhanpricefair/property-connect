@@ -12,6 +12,20 @@ const PARTNER_STATUS_VALUES = [
   "WITHDRAWN",
 ] as const;
 
+async function acceptAgreement(formData: FormData) {
+  "use server";
+  const session = await auth();
+  if (!session?.user || session.user.role !== "PARTNER") return;
+  if (formData.get("agree") !== "on") return;
+
+  await db.partner.updateMany({
+    where: { userId: session.user.id, agreementAcceptedAt: null },
+    data: { agreementAcceptedAt: new Date() },
+  });
+
+  revalidatePath("/partner/dashboard");
+}
+
 async function respondToAssignment(assignmentId: string, formData: FormData) {
   "use server";
   const session = await auth();
@@ -25,6 +39,7 @@ async function respondToAssignment(assignmentId: string, formData: FormData) {
     include: { partner: true, lead: true },
   });
   if (!assignment || assignment.partner.userId !== session.user.id) return;
+  if (!assignment.partner.agreementAcceptedAt) return;
   if (assignment.status !== "ASSIGNED") return;
 
   const newLeadStatus = decision === "ACCEPTED" ? "ACCEPTED" : "UNMATCHED";
@@ -101,6 +116,37 @@ export default async function PartnerDashboard() {
         <p className="mt-2 text-neutral-600 dark:text-neutral-400">
           No partner profile is linked to this account yet. Contact the ReferWise team.
         </p>
+      </main>
+    );
+  }
+
+  if (!partner.agreementAcceptedAt) {
+    return (
+      <main className="mx-auto max-w-2xl px-6 py-16">
+        <h1 className="text-2xl font-semibold">One more step, {partner.businessName}</h1>
+        <p className="mt-3 text-neutral-600 dark:text-neutral-400">
+          Before you can see or accept any leads, please read the referral agreement — it covers the
+          fee schedule, response deadlines, and payment terms.
+        </p>
+        <Link
+          href="/partner-agreement"
+          target="_blank"
+          className="mt-4 inline-block rounded border border-neutral-300 px-4 py-2 text-sm dark:border-neutral-700"
+        >
+          Read the referral agreement ↗
+        </Link>
+        <form action={acceptAgreement} className="mt-6 flex flex-col gap-4">
+          <label className="flex items-start gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+            <input type="checkbox" name="agree" required className="mt-1" />
+            <span>I have read and agree to the ReferWise Partner Referral Agreement.</span>
+          </label>
+          <button
+            type="submit"
+            className="w-fit rounded bg-neutral-900 px-4 py-2 text-sm text-white dark:bg-white dark:text-neutral-900"
+          >
+            Agree and continue
+          </button>
+        </form>
       </main>
     );
   }
