@@ -154,6 +154,7 @@ const MELBOURNE_SUBURBS: Array<{ name: string; postcode: string; region: string 
   { name: "South Morang", postcode: "3752", region: "Melbourne - Outer North" },
   { name: "Mernda", postcode: "3754", region: "Melbourne - Outer North" },
   { name: "Doreen", postcode: "3754", region: "Melbourne - Outer North" },
+  { name: "Wollert", postcode: "3750", region: "Melbourne - Outer North" },
   { name: "Whittlesea", postcode: "3757", region: "Melbourne - Outer North" },
   { name: "Craigieburn", postcode: "3064", region: "Melbourne - Outer North" },
   { name: "Roxburgh Park", postcode: "3064", region: "Melbourne - Outer North" },
