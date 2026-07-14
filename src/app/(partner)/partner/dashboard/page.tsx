@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { auth, signOut } from "@/lib/auth";
@@ -121,19 +122,28 @@ export default async function PartnerDashboard() {
             {assignments.length} lead{assignments.length === 1 ? "" : "s"} assigned to you
           </p>
         </div>
-        <form
-          action={async () => {
-            "use server";
-            await signOut({ redirectTo: "/login" });
-          }}
-        >
-          <button
-            type="submit"
+        <div className="flex items-center gap-3">
+          <Link
+            href="/partner-agreement"
+            target="_blank"
             className="rounded border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700"
           >
-            Sign out
-          </button>
-        </form>
+            Referral agreement
+          </Link>
+          <form
+            action={async () => {
+              "use server";
+              await signOut({ redirectTo: "/login" });
+            }}
+          >
+            <button
+              type="submit"
+              className="rounded border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700"
+            >
+              Sign out
+            </button>
+          </form>
+        </div>
       </div>
 
       <div className="mt-8 flex flex-col gap-4">
