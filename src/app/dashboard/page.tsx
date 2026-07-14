@@ -1,5 +1,10 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 // A neutral post-login landing spot — Credentials sign-in can't branch its
 // redirect target on the role it's about to discover, so it always sends

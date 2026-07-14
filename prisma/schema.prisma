@@ -30,6 +30,7 @@ enum PartnerType {
   MORTGAGE_BROKER
   INSPECTOR
   CONVEYANCER
+  PROPERTY_MANAGER
 }
 
 enum AgentType {
