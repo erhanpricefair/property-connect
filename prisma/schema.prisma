@@ -282,6 +282,7 @@ model Partner {
   capacity          Int           @default(10) // max concurrent open leads
   responseRateScore Float         @default(1.0) // decays on decline/timeout, feeds routing priority
   avgResponseMins   Int?
+  agreementAcceptedAt DateTime? // set when the partner ticks "I agree" to the referral agreement — dashboard is gated until this is set
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
