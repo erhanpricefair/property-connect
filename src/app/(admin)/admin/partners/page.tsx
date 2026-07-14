@@ -119,6 +119,13 @@ export default async function AdminPartnersPage({
 
       <section className="mt-8 rounded border border-neutral-200 p-4 dark:border-neutral-800">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Add a partner</h2>
+        <p className="mt-1 text-sm text-neutral-500">
+          Before onboarding, share the{" "}
+          <Link href="/partner-agreement" target="_blank" className="underline">
+            referral agreement
+          </Link>{" "}
+          (fee schedule, SLA windows, payment terms) so they know what they&apos;re agreeing to.
+        </p>
         <form action={createPartnerFromForm} className="mt-4 grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-1">
             <label htmlFor="type" className="text-xs text-neutral-500">
