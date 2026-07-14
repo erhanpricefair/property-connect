@@ -54,6 +54,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
+  verification: {
+    google: "FRXgtjLlL7K36_pAimWhoN60NuNOrb3jHSA-Yg_vrWw",
+  },
 };
 
 const organizationJsonLd = {
