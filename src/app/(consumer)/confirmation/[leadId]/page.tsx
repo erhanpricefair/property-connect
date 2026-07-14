@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { ConsumerHeader } from "@/components/marketing/consumer-header";
+
+export const metadata: Metadata = {
+  title: "Submission received",
+  robots: { index: false, follow: false },
+};
 
 export default async function ConfirmationPage({
   params,
